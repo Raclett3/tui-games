@@ -28,6 +28,7 @@ fn main() -> std::io::Result<()> {
             Key::ArrowLeft => game.move_cursor(-1, 0),
             Key::ArrowRight => game.move_cursor(1, 0),
             Key::Letter(' ') => game.open(),
+            Key::Letter('r') | Key::Letter('R') => game = Game::new(9, 9, 10),
             _ => (),
         }
     }

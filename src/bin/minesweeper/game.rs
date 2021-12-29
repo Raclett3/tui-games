@@ -31,6 +31,8 @@ pub struct Board {
     width: usize,
     height: usize,
     cells: Vec<Cell>,
+    safe_cells: usize,
+    revealed_cells: usize,
 }
 
 fn cells_coord(width: usize, height: usize) -> impl Iterator<Item = (usize, usize)> {
@@ -78,6 +80,8 @@ impl Board {
             width,
             height,
             cells,
+            safe_cells: height * width - mines,
+            revealed_cells: 0,
         }
     }
 
@@ -95,18 +99,29 @@ impl Board {
         }
 
         self.mut_cell_at(x, y).is_revealed = true;
+        self.revealed_cells += 1;
         if self.mut_cell_at(x, y).adjacent_mines == 0 {
             for (adj_x, adj_y) in adjacent_cells_coord(x, y, self.width, self.height) {
                 self.open(adj_x, adj_y);
             }
         }
     }
+
+    fn is_cleared(&self) -> bool {
+        self.revealed_cells >= self.safe_cells
+    }
+}
+
+enum GameResult {
+    Success,
+    Failure,
 }
 
 pub struct Game {
     cursor_x: usize,
     cursor_y: usize,
     board: Board,
+    result: Option<GameResult>,
 }
 
 impl Game {
@@ -115,6 +130,7 @@ impl Game {
             cursor_x: 0,
             cursor_y: 0,
             board: Board::new(width, height, mines),
+            result: None,
         }
     }
 
@@ -147,6 +163,13 @@ impl Game {
 
             println!("\r");
         }
+        let status = match self.result {
+            Some(GameResult::Success) => "All safe cells revealed! You win! Press R to retry",
+            Some(GameResult::Failure) => "You lose... Press R to retry",
+            None => "Arrow - Move cursor, Space - Reveal, R - Retry",
+        };
+
+        println!("{}\r", status);
     }
 
     pub fn move_cursor(&mut self, x: isize, y: isize) {
@@ -159,6 +182,13 @@ impl Game {
     }
 
     pub fn open(&mut self) {
-        self.board.open(self.cursor_x, self.cursor_y);
+        if self.result.is_none() {
+            self.board.open(self.cursor_x, self.cursor_y);
+            if self.board.cell_at(self.cursor_x, self.cursor_y).is_mine {
+                self.result = Some(GameResult::Failure);
+            } else if self.board.is_cleared() {
+                self.result = Some(GameResult::Success);
+            }
+        }
     }
 }
