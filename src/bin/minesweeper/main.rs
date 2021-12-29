@@ -23,10 +23,10 @@ fn main() -> std::io::Result<()> {
         let key = input.get_key();
         match key {
             Key::Control('C') => break,
-            Key::ArrowUp => game.move_cursor(0, -1),
-            Key::ArrowDown => game.move_cursor(0, 1),
-            Key::ArrowLeft => game.move_cursor(-1, 0),
-            Key::ArrowRight => game.move_cursor(1, 0),
+            Key::Character('k') | Key::Character('K') | Key::ArrowUp => game.move_cursor(0, -1),
+            Key::Character('j') | Key::Character('J') | Key::ArrowDown => game.move_cursor(0, 1),
+            Key::Character('h') | Key::Character('H') | Key::ArrowLeft => game.move_cursor(-1, 0),
+            Key::Character('l') | Key::Character('L') | Key::ArrowRight => game.move_cursor(1, 0),
             Key::Character('f') | Key::Character('F') => game.flag(),
             Key::Character(' ') => game.reveal(true),
             Key::Character('a') | Key::Character('A') => game.reveal(false),

@@ -212,7 +212,7 @@ impl Game {
         let status = match self.result {
             Some(GameResult::Success) => "All safe cells revealed! You win! Press R to retry",
             Some(GameResult::Failure) => "You lose... Press R to retry",
-            None => "Arrow - Move cursor, A - Reveal, Space - Reveal (Can perform \"Chord\"), F - Flag, R - Retry",
+            None => "Arrow (or HJKL) - Move cursor, A - Reveal, Space - Reveal (Can perform \"Chord\"), F - Flag, R - Retry",
         };
 
         println!("{}\r", status);
