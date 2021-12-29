@@ -34,6 +34,7 @@ pub struct Board {
     cells: Vec<Cell>,
     safe_cells: usize,
     revealed_cells: usize,
+    revealed_mine: bool,
 }
 
 fn cells_coord(width: usize, height: usize) -> impl Iterator<Item = (usize, usize)> {
@@ -55,7 +56,8 @@ fn adjacent_cells_coord(
                 ))
             })
         })
-        .filter(move |&(x, y)| y < height && x < width && !(x == 0 && y == 0))
+        .filter(move |&(adj_x, adj_y)| !(adj_x == x && adj_y == y))
+        .filter(move |&(x, y)| y < height && x < width)
 }
 
 impl Board {
@@ -84,6 +86,7 @@ impl Board {
             cells,
             safe_cells: height * width - mines,
             revealed_cells: 0,
+            revealed_mine: false,
         }
     }
 
@@ -125,7 +128,13 @@ impl Board {
 
         self.mut_cell_at(x, y).is_revealed = true;
         self.revealed_cells += 1;
-        if self.cell_at(x, y).adjacent_mines == 0 && !self.cell_at(x, y).is_mine {
+
+        if self.cell_at(x, y).is_mine {
+            self.revealed_mine = true;
+            return;
+        }
+
+        if self.cell_at(x, y).adjacent_mines == 0 {
             for (adj_x, adj_y) in adjacent_cells_coord(x, y, self.width, self.height) {
                 self.reveal(adj_x, adj_y);
             }
@@ -233,7 +242,7 @@ impl Game {
             self.board.reveal(self.cursor_x, self.cursor_y);
         }
 
-        if self.board.cell_at(self.cursor_x, self.cursor_y).is_mine {
+        if self.board.revealed_mine {
             self.result = Some(GameResult::Failure);
         } else if self.board.is_cleared() {
             self.result = Some(GameResult::Success);
