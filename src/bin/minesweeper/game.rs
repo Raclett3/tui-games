@@ -95,9 +95,9 @@ impl Board {
         &mut self.cells[y * self.width + x]
     }
 
-    fn chord_open(&mut self, x: usize, y: usize) {
+    fn chord_reveal(&mut self, x: usize, y: usize) {
         if !self.cell_at(x, y).is_revealed {
-            self.open(x, y);
+            self.reveal(x, y);
             return;
         }
 
@@ -114,11 +114,11 @@ impl Board {
                 continue;
             }
 
-            self.open(adj_x, adj_y);
+            self.reveal(adj_x, adj_y);
         }
     }
 
-    fn open(&mut self, x: usize, y: usize) {
+    fn reveal(&mut self, x: usize, y: usize) {
         if self.cell_at(x, y).is_revealed || self.cell_at(x, y).is_flagged {
             return;
         }
@@ -127,7 +127,7 @@ impl Board {
         self.revealed_cells += 1;
         if self.cell_at(x, y).adjacent_mines == 0 && !self.cell_at(x, y).is_mine {
             for (adj_x, adj_y) in adjacent_cells_coord(x, y, self.width, self.height) {
-                self.open(adj_x, adj_y);
+                self.reveal(adj_x, adj_y);
             }
         }
     }
@@ -203,7 +203,7 @@ impl Game {
         let status = match self.result {
             Some(GameResult::Success) => "All safe cells revealed! You win! Press R to retry",
             Some(GameResult::Failure) => "You lose... Press R to retry",
-            None => "Arrow - Move cursor, Space - Reveal, F - Flag, R - Retry",
+            None => "Arrow - Move cursor, A - Reveal, Space - Reveal (Can perform \"Chord\"), F - Flag, R - Retry",
         };
 
         println!("{}\r", status);
@@ -222,15 +222,15 @@ impl Game {
         self.cursor_y %= self.board.height;
     }
 
-    pub fn open(&mut self, chord: bool) {
+    pub fn reveal(&mut self, chord: bool) {
         if self.result.is_some() || self.board.cell_at(self.cursor_x, self.cursor_y).is_flagged {
             return;
         }
 
         if chord {
-            self.board.chord_open(self.cursor_x, self.cursor_y);
+            self.board.chord_reveal(self.cursor_x, self.cursor_y);
         } else {
-            self.board.open(self.cursor_x, self.cursor_y);
+            self.board.reveal(self.cursor_x, self.cursor_y);
         }
 
         if self.board.cell_at(self.cursor_x, self.cursor_y).is_mine {

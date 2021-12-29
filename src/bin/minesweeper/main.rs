@@ -27,10 +27,10 @@ fn main() -> std::io::Result<()> {
             Key::ArrowDown => game.move_cursor(0, 1),
             Key::ArrowLeft => game.move_cursor(-1, 0),
             Key::ArrowRight => game.move_cursor(1, 0),
-            Key::Letter('f') | Key::Letter('F') => game.flag(),
-            Key::Letter(' ') => game.open(true),
-            Key::Letter('a') | Key::Letter('A') => game.open(false),
-            Key::Letter('r') | Key::Letter('R') => game = Game::new(9, 9, 10),
+            Key::Character('f') | Key::Character('F') => game.flag(),
+            Key::Character(' ') => game.reveal(true),
+            Key::Character('a') | Key::Character('A') => game.reveal(false),
+            Key::Character('r') | Key::Character('R') => game = Game::new(9, 9, 10),
             _ => (),
         }
     }

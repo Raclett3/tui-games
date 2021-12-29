@@ -11,7 +11,7 @@ pub enum Key {
     Return,
     Tab,
     Control(char),
-    Letter(char),
+    Character(char),
 }
 
 fn process_input(input: &mut KeyInput) -> Option<Key> {
@@ -22,7 +22,7 @@ fn process_input(input: &mut KeyInput) -> Option<Key> {
         127 => Key::Delete,
 
         x @ 1..=31 => Key::Control((x + b'A' - 1) as char),
-        x @ 32..=126 => Key::Letter(x as char),
+        x @ 32..=126 => Key::Character(x as char),
 
         // UTF-8 multibytes characters
         0b11000000..=0b11011111 => {
