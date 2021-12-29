@@ -61,7 +61,7 @@ fn adjacent_cells_coord(
 }
 
 impl Board {
-    fn new(height: usize, width: usize, mines: usize) -> Self {
+    fn new(width: usize, height: usize, mines: usize) -> Self {
         let mut cells: Vec<_> = (0..width * height)
             .map(|x| Cell {
                 is_mine: x < mines,
@@ -212,7 +212,7 @@ impl Game {
         let status = match self.result {
             Some(GameResult::Success) => "All safe cells revealed! You win! Press R to retry",
             Some(GameResult::Failure) => "You lose... Press R to retry",
-            None => "Arrow (or HJKL) - Move cursor, A - Reveal, Space - Reveal (Can perform \"Chord\"), F - Flag, R - Retry",
+            None => "Arrow (or HJKL) - Move cursor, A - Reveal, Space - Reveal (Can perform \"Chord\"), F - Flag\r\nR - Retry, C - Change difficulty",
         };
 
         println!("{}\r", status);

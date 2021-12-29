@@ -15,6 +15,8 @@ fn main() -> std::io::Result<()> {
     rawmode.enable()?;
     let mut input = KeyInput::new();
     let mut game = Game::new(9, 9, 10);
+    let difficulties = [(9, 9, 10), (16, 16, 40), (30, 16, 99)];
+    let mut difficulty = 0;
 
     loop {
         cls();
@@ -30,7 +32,15 @@ fn main() -> std::io::Result<()> {
             Key::Character('f') | Key::Character('F') => game.flag(),
             Key::Character(' ') => game.reveal(true),
             Key::Character('a') | Key::Character('A') => game.reveal(false),
-            Key::Character('r') | Key::Character('R') => game = Game::new(9, 9, 10),
+            Key::Character('c') | Key::Character('C') => {
+                difficulty = (difficulty + 1) % difficulties.len();
+                let (width, height, mines) = difficulties[difficulty];
+                game = Game::new(width, height, mines);
+            }
+            Key::Character('r') | Key::Character('R') => {
+                let (width, height, mines) = difficulties[difficulty];
+                game = Game::new(width, height, mines);
+            }
             _ => (),
         }
     }
