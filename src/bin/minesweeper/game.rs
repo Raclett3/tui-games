@@ -25,6 +25,7 @@ struct Cell {
     pub is_mine: bool,
     pub is_revealed: bool,
     pub adjacent_mines: usize,
+    pub is_flagged: bool,
 }
 
 pub struct Board {
@@ -54,7 +55,7 @@ fn adjacent_cells_coord(
                 ))
             })
         })
-        .filter(move |&(x, y)| y < height && x < width)
+        .filter(move |&(x, y)| y < height && x < width && !(x == 0 && y == 0))
 }
 
 impl Board {
@@ -64,6 +65,7 @@ impl Board {
                 is_mine: x < mines,
                 adjacent_mines: 0,
                 is_revealed: false,
+                is_flagged: false,
             })
             .collect();
         cells.shuffle(&mut rand::thread_rng());
@@ -93,18 +95,49 @@ impl Board {
         &mut self.cells[y * self.width + x]
     }
 
+    fn chord_open(&mut self, x: usize, y: usize) {
+        if !self.cell_at(x, y).is_revealed {
+            self.open(x, y);
+            return;
+        }
+
+        let adjacent_flags = adjacent_cells_coord(x, y, self.width, self.height)
+            .filter(|&(x, y)| self.cell_at(x, y).is_flagged)
+            .count();
+
+        if adjacent_flags != self.cell_at(x, y).adjacent_mines {
+            return;
+        }
+
+        for (adj_x, adj_y) in adjacent_cells_coord(x, y, self.width, self.height) {
+            if self.cell_at(adj_x, adj_y).is_revealed {
+                continue;
+            }
+
+            self.open(adj_x, adj_y);
+        }
+    }
+
     fn open(&mut self, x: usize, y: usize) {
-        if self.cell_at(x, y).is_revealed {
+        if self.cell_at(x, y).is_revealed || self.cell_at(x, y).is_flagged {
             return;
         }
 
         self.mut_cell_at(x, y).is_revealed = true;
         self.revealed_cells += 1;
-        if self.mut_cell_at(x, y).adjacent_mines == 0 {
+        if self.cell_at(x, y).adjacent_mines == 0 {
             for (adj_x, adj_y) in adjacent_cells_coord(x, y, self.width, self.height) {
                 self.open(adj_x, adj_y);
             }
         }
+    }
+
+    fn flag(&mut self, x: usize, y: usize) {
+        if self.cell_at(x, y).is_revealed {
+            return;
+        }
+
+        self.mut_cell_at(x, y).is_flagged ^= true;
     }
 
     fn is_cleared(&self) -> bool {
@@ -156,6 +189,10 @@ impl Game {
                     } else {
                         print_with_color!("   ", WHITE, bg);
                     }
+                } else if cell.is_flagged {
+                    print_with_color!("[", WHITE, bg);
+                    print_with_color!("F", RED, bg);
+                    print_with_color!("]", WHITE, bg);
                 } else {
                     print_with_color!("[ ]", WHITE, bg);
                 }
@@ -166,13 +203,17 @@ impl Game {
         let status = match self.result {
             Some(GameResult::Success) => "All safe cells revealed! You win! Press R to retry",
             Some(GameResult::Failure) => "You lose... Press R to retry",
-            None => "Arrow - Move cursor, Space - Reveal, R - Retry",
+            None => "Arrow - Move cursor, A - Reveal, Space - Reveal (Can perform \"Chord\"), F - Flag, R - Retry",
         };
 
         println!("{}\r", status);
     }
 
     pub fn move_cursor(&mut self, x: isize, y: isize) {
+        if self.result.is_some() {
+            return;
+        }
+
         let x = x.rem_euclid(self.board.width as isize) as usize;
         let y = y.rem_euclid(self.board.height as isize) as usize;
         self.cursor_x += x;
@@ -181,14 +222,27 @@ impl Game {
         self.cursor_y %= self.board.height;
     }
 
-    pub fn open(&mut self) {
-        if self.result.is_none() {
+    pub fn open(&mut self, chord: bool) {
+        if self.result.is_some() || self.board.cell_at(self.cursor_x, self.cursor_y).is_flagged {
+            return;
+        }
+
+        if chord {
+            self.board.chord_open(self.cursor_x, self.cursor_y);
+        } else {
             self.board.open(self.cursor_x, self.cursor_y);
-            if self.board.cell_at(self.cursor_x, self.cursor_y).is_mine {
-                self.result = Some(GameResult::Failure);
-            } else if self.board.is_cleared() {
-                self.result = Some(GameResult::Success);
-            }
+        }
+
+        if self.board.cell_at(self.cursor_x, self.cursor_y).is_mine {
+            self.result = Some(GameResult::Failure);
+        } else if self.board.is_cleared() {
+            self.result = Some(GameResult::Success);
+        }
+    }
+
+    pub fn flag(&mut self) {
+        if self.result.is_none() {
+            self.board.flag(self.cursor_x, self.cursor_y);
         }
     }
 }
