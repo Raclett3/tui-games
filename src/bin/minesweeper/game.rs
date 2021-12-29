@@ -125,7 +125,7 @@ impl Board {
 
         self.mut_cell_at(x, y).is_revealed = true;
         self.revealed_cells += 1;
-        if self.cell_at(x, y).adjacent_mines == 0 {
+        if self.cell_at(x, y).adjacent_mines == 0 && !self.cell_at(x, y).is_mine {
             for (adj_x, adj_y) in adjacent_cells_coord(x, y, self.width, self.height) {
                 self.open(adj_x, adj_y);
             }
@@ -203,7 +203,7 @@ impl Game {
         let status = match self.result {
             Some(GameResult::Success) => "All safe cells revealed! You win! Press R to retry",
             Some(GameResult::Failure) => "You lose... Press R to retry",
-            None => "Arrow - Move cursor, A - Reveal, Space - Reveal (Can perform \"Chord\"), F - Flag, R - Retry",
+            None => "Arrow - Move cursor, Space - Reveal, F - Flag, R - Retry",
         };
 
         println!("{}\r", status);
