@@ -1,15 +1,6 @@
+use crate::screen::Screen;
 use rand::seq::SliceRandom;
 use std::num::TryFromIntError;
-
-macro_rules! print_with_color {
-    ($format:expr, $fg:expr, $bg:expr $(,$vars:expr)*) => {
-        {
-            print!("\x1b[{};{}m", $fg, $bg + 10);
-            print!($format $(,$vars)*);
-            print!("\x1b[0m");
-        }
-    }
-}
 
 const BLACK: usize = 30;
 const RED: usize = 31;
@@ -176,7 +167,9 @@ impl Game {
         }
     }
 
-    pub fn render(&self) {
+    pub fn render(&self) -> Screen {
+        let mut screen = Screen::new();
+
         for y in 0..self.board.height {
             for x in 0..self.board.width {
                 let cell = self.board.cell_at(x, y);
@@ -191,31 +184,37 @@ impl Game {
 
                 if cell.is_revealed {
                     if cell.is_mine {
-                        print_with_color!(" X ", RED, bg);
+                        screen.write_color(" X ", RED, bg);
                     } else if cell.adjacent_mines > 0 {
                         let fg = NUMBER_COLORS[cell.adjacent_mines];
-                        print_with_color!(" {} ", fg, bg, cell.adjacent_mines);
+                        screen.write_color(&format!(" {} ", cell.adjacent_mines), fg, bg);
                     } else {
-                        print_with_color!("   ", WHITE, bg);
+                        screen.write_color("   ", WHITE, bg);
                     }
                 } else if cell.is_flagged {
-                    print_with_color!("[", WHITE, bg);
-                    print_with_color!("F", RED, bg);
-                    print_with_color!("]", WHITE, bg);
+                    screen.write_color("[", WHITE, bg);
+                    screen.write_color("F", RED, bg);
+                    screen.write_color("]", WHITE, bg);
                 } else {
-                    print_with_color!("[ ]", WHITE, bg);
+                    screen.write_color("[ ]", WHITE, bg);
                 }
             }
 
-            println!("\r");
+            screen.new_line();
         }
-        let status = match self.result {
-            Some(GameResult::Success) => "All safe cells revealed! You win! Press R to retry",
-            Some(GameResult::Failure) => "You lose... Press R to retry",
-            None => "Arrow (or HJKL) - Move cursor, A - Reveal, Space - Reveal (Can perform \"Chord\"), F - Flag\r\nR - Retry, C - Change difficulty",
-        };
+        match self.result {
+            Some(GameResult::Success) => {
+                screen.write("All safe cells revealed! You win! Press R to retry")
+            }
+            Some(GameResult::Failure) => screen.write("You lose... Press R to retry"),
+            None => {
+                screen.write("Arrow (or HJKL) - Move cursor, A - Reveal, Space - Reveal (Can perform \"Chord\"), F - Flag");
+                screen.new_line();
+                screen.write("R - Retry, C - Change difficulty");
+            }
+        }
 
-        println!("{}\r", status);
+        screen
     }
 
     pub fn move_cursor(&mut self, x: isize, y: isize) {

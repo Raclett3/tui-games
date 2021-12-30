@@ -1,4 +1,5 @@
 mod game;
+mod screen;
 
 use game::Game;
 use tui::{
@@ -18,9 +19,11 @@ fn main() -> std::io::Result<()> {
     let difficulties = [(9, 9, 10), (16, 16, 40), (30, 16, 99)];
     let mut difficulty = 0;
 
+    cls();
+    let mut screen = screen::Screen::new();
+
     loop {
-        cls();
-        game.render();
+        screen.render(game.render())?;
 
         let key = input.get_key();
         match key {
