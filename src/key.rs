@@ -14,11 +14,11 @@ pub enum Key {
     Character(char),
 }
 
-fn process_input(input: &mut KeyInput) -> Option<Key> {
-    let key = match input.next_char() {
+fn process_input(input: &mut KeyInput) -> std::io::Result<Option<Key>> {
+    let key = match input.next_char()? {
         9 => Key::Tab,
         13 => Key::Return,
-        27 => process_escape(input)?,
+        27 => return Ok(process_escape(input)),
         127 => Key::Delete,
 
         x @ 1..=31 => Key::Control((x + b'A' - 1) as char),
@@ -27,21 +27,21 @@ fn process_input(input: &mut KeyInput) -> Option<Key> {
         // UTF-8 multibytes characters
         0b11000000..=0b11011111 => {
             input.skip(1);
-            return None;
+            return Ok(None);
         }
         0b11100000..=0b11101111 => {
             input.skip(2);
-            return None;
+            return Ok(None);
         }
         0b11110000..=0b11110111 => {
             input.skip(3);
-            return None;
+            return Ok(None);
         }
 
-        _ => return None,
+        _ => return Ok(None),
     };
 
-    Some(key)
+    Ok(Some(key))
 }
 
 fn process_escape(input: &mut KeyInput) -> Option<Key> {
@@ -105,16 +105,15 @@ impl KeyInput {
         }
     }
 
-    fn next_char(&mut self) -> u8 {
+    fn next_char(&mut self) -> std::io::Result<u8> {
         loop {
             if let Some(next) = self.next_char_in_buf() {
-                return next;
+                return Ok(next);
             }
 
-            if let Ok(size) = self.source.read(&mut self.buf) {
-                self.buf_size = size;
-                self.buf_position = 0;
-            }
+            let size = self.source.read(&mut self.buf)?;
+            self.buf_size = size;
+            self.buf_position = 0;
         }
     }
 
@@ -126,10 +125,10 @@ impl KeyInput {
         self.buf_position += steps;
     }
 
-    pub fn get_key(&mut self) -> Key {
+    pub fn get_key(&mut self) -> std::io::Result<Key> {
         loop {
-            if let Some(key) = process_input(self) {
-                return key;
+            if let Some(key) = process_input(self)? {
+                return Ok(key);
             }
         }
     }

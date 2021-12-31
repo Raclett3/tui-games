@@ -7,7 +7,7 @@ fn main() -> io::Result<()> {
     raw_mode.enable()?;
     let mut input = KeyInput::new(io::stdin());
     loop {
-        let next = input.get_key();
+        let next = input.get_key()?;
         print!("{:?}\r\n", next);
         if next == Key::Control('C') {
             break;

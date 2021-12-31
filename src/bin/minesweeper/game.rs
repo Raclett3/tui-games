@@ -304,7 +304,7 @@ where
 
     loop {
         screen.render(game.render())?;
-        let key = input.get_key();
+        let key = input.get_key()?;
         if key == Key::Control('C') {
             break;
         }
