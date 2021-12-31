@@ -2,6 +2,7 @@ mod game;
 mod screen;
 
 use game::Game;
+use std::io::{stdin, stdout};
 use tui::{
     key::{Key, KeyInput},
     rawmode::RawMode,
@@ -14,13 +15,13 @@ fn cls() {
 fn main() -> std::io::Result<()> {
     let mut rawmode = RawMode::new();
     rawmode.enable()?;
-    let mut input = KeyInput::new();
+    let mut input = KeyInput::new(stdin());
     let mut game = Game::new(9, 9, 10);
     let difficulties = [(9, 9, 10), (16, 16, 40), (30, 16, 99)];
     let mut difficulty = 0;
 
     cls();
-    let mut screen = screen::Screen::new();
+    let mut screen = screen::Screen::new(stdout());
 
     loop {
         screen.render(game.render())?;

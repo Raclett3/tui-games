@@ -1,4 +1,4 @@
-use crate::screen::Screen;
+use crate::screen::ScreenBuffer;
 use rand::seq::SliceRandom;
 use std::num::TryFromIntError;
 
@@ -167,8 +167,8 @@ impl Game {
         }
     }
 
-    pub fn render(&self) -> Screen {
-        let mut screen = Screen::new();
+    pub fn render(&self) -> ScreenBuffer {
+        let mut screen = ScreenBuffer::new();
 
         for y in 0..self.board.height {
             for x in 0..self.board.width {

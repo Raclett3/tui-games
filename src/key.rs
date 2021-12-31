@@ -1,4 +1,4 @@
-use std::io::{stdin, Read};
+use std::io::Read;
 
 #[derive(PartialEq, Debug)]
 pub enum Key {
@@ -27,15 +27,15 @@ fn process_input(input: &mut KeyInput) -> Option<Key> {
         // UTF-8 multibytes characters
         0b11000000..=0b11011111 => {
             input.skip(1);
-            return None
+            return None;
         }
         0b11100000..=0b11101111 => {
             input.skip(2);
-            return None
+            return None;
         }
         0b11110000..=0b11110111 => {
             input.skip(3);
-            return None
+            return None;
         }
 
         _ => return None,
@@ -79,16 +79,21 @@ fn process_escape(input: &mut KeyInput) -> Option<Key> {
     Some(key)
 }
 
-#[derive(Default)]
 pub struct KeyInput {
     buf: [u8; 16],
     buf_position: usize,
     buf_size: usize,
+    source: Box<dyn Read>,
 }
 
 impl KeyInput {
-    pub fn new() -> Self {
-        Self::default()
+    pub fn new(source: impl Read + 'static) -> Self {
+        KeyInput {
+            buf: [0; 16],
+            buf_position: 0,
+            buf_size: 0,
+            source: Box::new(source),
+        }
     }
 
     fn next_char_in_buf(&mut self) -> Option<u8> {
@@ -106,7 +111,7 @@ impl KeyInput {
                 return next;
             }
 
-            if let Ok(size) = stdin().lock().read(&mut self.buf) {
+            if let Ok(size) = self.source.read(&mut self.buf) {
                 self.buf_size = size;
                 self.buf_position = 0;
             }

@@ -1,4 +1,4 @@
-use std::io::{stdout, BufWriter, Write};
+use std::io::{BufWriter, Write};
 
 #[derive(PartialEq, Clone, Copy)]
 struct Character {
@@ -30,18 +30,19 @@ fn write_char(dest: &mut impl Write, x: usize, y: usize, c: Character) -> std::i
 
 pub struct Screen {
     characters: Vec<Vec<Character>>,
+    dest: Box<dyn Write>,
 }
 
 impl Screen {
-    pub fn new() -> Self {
+    pub fn new(dest: impl Write + 'static) -> Self {
         Screen {
             characters: vec![vec![]],
+            dest: Box::new(dest),
         }
     }
 
-    pub fn render(&mut self, new: Screen) -> std::io::Result<()> {
-        let out = stdout();
-        let mut stream = BufWriter::new(out.lock());
+    pub fn render(&mut self, new: ScreenBuffer) -> std::io::Result<()> {
+        let mut stream = BufWriter::new(&mut self.dest);
 
         if self.characters.len() < new.characters.len() {
             self.characters.resize_with(new.characters.len(), Vec::new);
@@ -82,6 +83,18 @@ impl Screen {
         }
         write!(stream, "\x1b[{};1H", self.characters.len() + 1)?;
         stream.flush()
+    }
+}
+
+pub struct ScreenBuffer {
+    characters: Vec<Vec<Character>>,
+}
+
+impl ScreenBuffer {
+    pub fn new() -> Self {
+        ScreenBuffer {
+            characters: vec![vec![]],
+        }
     }
 
     pub fn write_color(&mut self, chars: &str, fg_color: usize, bg_color: usize) {
