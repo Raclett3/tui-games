@@ -188,6 +188,42 @@ impl MineSweeper {
         self.cursor_y %= self.board.height;
     }
 
+    pub fn move_cursor_smart(&mut self, x: isize, y: isize) {
+        if self.result.is_some() {
+            return;
+        }
+
+        let mut is_first_move = true;
+
+        loop {
+            let x_mod = x.rem_euclid(self.board.width as isize) as usize;
+            let y_mod = y.rem_euclid(self.board.height as isize) as usize;
+
+            let next_x = (self.cursor_x + x_mod) % self.board.width;
+            let next_y = (self.cursor_y + y_mod) % self.board.height;
+
+            let current_cell = self.board.cell_at(self.cursor_x, self.cursor_y);
+            let next_cell = self.board.cell_at(next_x, next_y);
+
+            if (next_x as isize - self.cursor_x as isize).signum() != x.signum()
+                || (next_y as isize - self.cursor_y as isize).signum() != y.signum()
+                || current_cell.is_revealed != next_cell.is_revealed
+            {
+                if is_first_move {
+                    self.cursor_x = next_x;
+                    self.cursor_y = next_y;
+                }
+
+                break;
+            }
+
+            self.cursor_x = next_x;
+            self.cursor_y = next_y;
+
+            is_first_move = false;
+        }
+    }
+
     pub fn reveal(&mut self, chord: bool) {
         if self.result.is_some() || self.board.cell_at(self.cursor_x, self.cursor_y).is_flagged {
             return;
@@ -261,7 +297,9 @@ impl Game for MineSweeper {
             }
             Some(GameResult::Failure) => screen.write("You lose... Press R to retry"),
             None => {
-                screen.write("Arrow (or HJKL) - Move cursor, A - Reveal, Space - Reveal (Can perform \"Chord\"), F - Flag");
+                screen.write("Arrow (or HJKL) - Move cursor, Shift + HJKL - Smart cursor");
+                screen.new_line();
+                screen.write("A - Reveal, Space - Reveal (Can perform \"Chord\"), F - Flag");
                 screen.new_line();
                 screen.write("R - Retry, C - Change difficulty, Ctrl-C - Quit");
             }
@@ -272,10 +310,14 @@ impl Game for MineSweeper {
 
     fn process_key(&mut self, key: Key) {
         match key {
-            Key::Character('k') | Key::Character('K') | Key::ArrowUp => self.move_cursor(0, -1),
-            Key::Character('j') | Key::Character('J') | Key::ArrowDown => self.move_cursor(0, 1),
-            Key::Character('h') | Key::Character('H') | Key::ArrowLeft => self.move_cursor(-1, 0),
-            Key::Character('l') | Key::Character('L') | Key::ArrowRight => self.move_cursor(1, 0),
+            Key::Character('k') | Key::ArrowUp => self.move_cursor(0, -1),
+            Key::Character('j') | Key::ArrowDown => self.move_cursor(0, 1),
+            Key::Character('h') | Key::ArrowLeft => self.move_cursor(-1, 0),
+            Key::Character('l') | Key::ArrowRight => self.move_cursor(1, 0),
+            Key::Character('K') => self.move_cursor_smart(0, -1),
+            Key::Character('J') => self.move_cursor_smart(0, 1),
+            Key::Character('H') => self.move_cursor_smart(-1, 0),
+            Key::Character('L') => self.move_cursor_smart(1, 0),
             Key::Character('f') | Key::Character('F') => self.flag(),
             Key::Character(' ') => self.reveal(true),
             Key::Character('a') | Key::Character('A') => self.reveal(false),
