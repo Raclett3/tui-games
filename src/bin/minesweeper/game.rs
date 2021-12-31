@@ -263,7 +263,7 @@ impl Game for MineSweeper {
             None => {
                 screen.write("Arrow (or HJKL) - Move cursor, A - Reveal, Space - Reveal (Can perform \"Chord\"), F - Flag");
                 screen.new_line();
-                screen.write("R - Retry, C - Change difficulty");
+                screen.write("R - Retry, C - Change difficulty, Ctrl-C - Quit");
             }
         }
 
