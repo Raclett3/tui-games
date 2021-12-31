@@ -73,7 +73,7 @@ fn main() -> std::io::Result<()> {
                     stream.write_all(&[255, 253, 34, 255, 250, 34, 1, 0, 255, 240, 255, 251, 1])?;
                     stream.flush()?;
                     let read_stream = stream.try_clone()?;
-                    read_stream.set_read_timeout(Some(std::time::Duration::from_secs(120)))?;
+                    read_stream.set_read_timeout(Some(std::time::Duration::from_secs(300)))?;
                     let _ = run_game(MineSweeper::new(0), TelnetRead::new(read_stream), stream);
                     return Ok(());
                 }
