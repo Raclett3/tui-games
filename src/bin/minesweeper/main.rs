@@ -6,6 +6,7 @@ use std::io::{stdin, stdout};
 use std::io::{Read, Write};
 use std::net::TcpListener;
 use tui::game::run_game;
+use tui::key::{ENABLE_MOUSE, DISABLE_MOUSE};
 use tui::rawmode::RawMode;
 
 #[derive(Clone, Copy)]
@@ -73,8 +74,11 @@ fn main() -> std::io::Result<()> {
                     stream.write_all(&[255, 253, 34, 255, 250, 34, 1, 0, 255, 240, 255, 251, 1])?;
                     stream.flush()?;
                     let read_stream = stream.try_clone()?;
+                    let mut write_stream = stream.try_clone()?;
                     read_stream.set_read_timeout(Some(std::time::Duration::from_secs(300)))?;
+                    write_stream.write_all(ENABLE_MOUSE.as_bytes())?;
                     let _ = run_game(MineSweeper::new(0), TelnetRead::new(read_stream), stream);
+                    write_stream.write_all(DISABLE_MOUSE.as_bytes())?;
                     return Ok(());
                 }
             }
@@ -83,8 +87,10 @@ fn main() -> std::io::Result<()> {
         }
         _ => {
             let mut rawmode = RawMode::new();
+            println!("{}", ENABLE_MOUSE);
             rawmode.enable()?;
             let result = run_game(MineSweeper::new(0), stdin(), stdout());
+            println!("{}", DISABLE_MOUSE);
             rawmode.disable()?;
             result
         }

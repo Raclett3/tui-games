@@ -1,7 +1,7 @@
 use rand::seq::SliceRandom;
 use std::num::TryFromIntError;
 use tui::game::Game;
-use tui::key::Key;
+use tui::key::{Key, MouseButton};
 use tui::screen::ScreenBuffer;
 
 const BLACK: usize = 30;
@@ -144,6 +144,10 @@ impl Board {
         self.mut_cell_at(x, y).is_flagged ^= true;
     }
 
+    fn contains_coord(&self, x: usize, y: usize) -> bool {
+        x < self.width && y < self.height
+    }
+
     fn is_cleared(&self) -> bool {
         self.revealed_cells >= self.safe_cells
     }
@@ -159,6 +163,7 @@ pub struct MineSweeper {
     cursor_y: usize,
     difficulty: usize,
     board: Board,
+    hold_mouse_buttons: (bool, bool),
     result: Option<GameResult>,
 }
 
@@ -171,6 +176,7 @@ impl MineSweeper {
             cursor_y: 0,
             difficulty,
             board: Board::new(width, height, mines),
+            hold_mouse_buttons: (false, false),
             result: None,
         }
     }
@@ -222,6 +228,15 @@ impl MineSweeper {
 
             is_first_move = false;
         }
+    }
+
+    pub fn set_cursor(&mut self, x: usize, y: usize) {
+        if self.result.is_some() {
+            return;
+        }
+
+        self.cursor_x = x;
+        self.cursor_y = y;
     }
 
     pub fn reveal(&mut self, chord: bool) {
@@ -321,6 +336,45 @@ impl Game for MineSweeper {
             }
             Key::Character('r') | Key::Character('R') => {
                 *self = MineSweeper::new(self.difficulty);
+            }
+            Key::Mousedown(MouseButton::Left, x, y) => {
+                let x = (x - 1) / 3;
+                let y = y - 1;
+                if self.board.contains_coord(x, y) {
+                    self.set_cursor(x, y);
+                }
+                self.hold_mouse_buttons.0 = true;
+            }
+            Key::Mouseup(MouseButton::Left, x, y) => {
+                let x = (x - 1) / 3;
+                let y = y - 1;
+                if self.board.contains_coord(x, y) {
+                    self.set_cursor(x, y);
+                    self.reveal(self.hold_mouse_buttons.0 && self.hold_mouse_buttons.1);
+                }
+                self.hold_mouse_buttons.0 = false;
+            }
+            Key::Mousedown(MouseButton::Right, x, y) => {
+                let x = (x - 1) / 3;
+                let y = y - 1;
+                if self.board.contains_coord(x, y) {
+                    self.set_cursor(x, y);
+                    self.flag();
+                }
+                self.hold_mouse_buttons.1 = true;
+            }
+            Key::Mouseup(MouseButton::Right, x, y) => {
+                let x = (x - 1) / 3;
+                let y = y - 1;
+                if self.hold_mouse_buttons.0
+                    && self.hold_mouse_buttons.1
+                    && self.board.contains_coord(x, y)
+                    && self.board.cell_at(x, y).is_revealed
+                {
+                    self.set_cursor(x, y);
+                    self.reveal(true);
+                }
+                self.hold_mouse_buttons.1 = false;
             }
             _ => (),
         }
