@@ -1,11 +1,11 @@
 mod game;
-mod screen;
 
-use game::{run_game, MineSweeper};
+use game::MineSweeper;
 use nix::unistd::{fork, ForkResult};
 use std::io::{stdin, stdout};
 use std::io::{Read, Write};
 use std::net::TcpListener;
+use tui::game::run_game;
 use tui::rawmode::RawMode;
 
 #[derive(Clone, Copy)]
