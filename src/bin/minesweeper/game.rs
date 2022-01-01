@@ -27,6 +27,8 @@ pub struct Board {
     width: usize,
     height: usize,
     cells: Vec<Cell>,
+    mines: usize,
+    is_initialized: bool,
     safe_cells: usize,
     revealed_cells: usize,
     revealed_mine: bool,
@@ -57,31 +59,48 @@ fn adjacent_cells_coord(
 
 impl Board {
     fn new(width: usize, height: usize, mines: usize) -> Self {
-        let mut cells: Vec<_> = (0..width * height)
-            .map(|x| Cell {
-                is_mine: x < mines,
+        let cells: Vec<_> = (0..width * height)
+            .map(|_| Cell {
+                is_mine: false,
                 adjacent_mines: 0,
                 is_revealed: false,
                 is_flagged: false,
             })
             .collect();
-        cells.shuffle(&mut rand::thread_rng());
-
-        for (x, y) in cells_coord(height, width) {
-            for (adj_x, adj_y) in adjacent_cells_coord(x, y, width, height) {
-                if cells[adj_y * width + adj_x].is_mine {
-                    cells[y * width + x].adjacent_mines += 1;
-                }
-            }
-        }
 
         Board {
             width,
             height,
             cells,
+            mines,
+            is_initialized: false,
             safe_cells: height * width - mines,
             revealed_cells: 0,
             revealed_mine: false,
+        }
+    }
+
+    fn init(&mut self, excluded_x: usize, excluded_y: usize) {
+        let excluded_cell = excluded_y * self.width + excluded_x;
+
+        let mut mines: Vec<_> = (0..(self.width * self.height - 1))
+            .map(|x| x < self.mines)
+            .collect();
+        mines.shuffle(&mut rand::thread_rng());
+
+        self.cells
+            .iter_mut()
+            .enumerate()
+            .filter(|(i, _)| *i != excluded_cell)
+            .zip(mines.into_iter())
+            .for_each(|((_, cell), is_mine)| cell.is_mine = is_mine);
+
+        for (x, y) in cells_coord(self.height, self.width) {
+            for (adj_x, adj_y) in adjacent_cells_coord(x, y, self.width, self.height) {
+                if self.cells[adj_y * self.width + adj_x].is_mine {
+                    self.cells[y * self.width + x].adjacent_mines += 1;
+                }
+            }
         }
     }
 
@@ -119,6 +138,11 @@ impl Board {
     fn reveal(&mut self, x: usize, y: usize) {
         if self.cell_at(x, y).is_revealed || self.cell_at(x, y).is_flagged {
             return;
+        }
+
+        if !self.is_initialized {
+            self.init(x, y);
+            self.is_initialized = true;
         }
 
         self.mut_cell_at(x, y).is_revealed = true;
