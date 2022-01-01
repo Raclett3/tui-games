@@ -1,6 +1,12 @@
 use std::io::Read;
 
 #[derive(PartialEq, Debug)]
+pub enum MouseButton {
+    Left,
+    Right,
+}
+
+#[derive(PartialEq, Debug)]
 pub enum Key {
     ArrowUp,
     ArrowDown,
@@ -12,13 +18,22 @@ pub enum Key {
     Tab,
     Control(char),
     Character(char),
+    Mousedown(MouseButton, usize, usize),
+    Mouseup(MouseButton, usize, usize),
 }
+
+pub const ENABLE_MOUSE: &str = "\x1b[?1000h\x1b[?1002h\x1b[?1015h\x1b[?1006h";
+pub const DISABLE_MOUSE: &str = "\x1b[?1006l\x1b[?1015l\x1b[?1002l\x1b[?1000l";
 
 fn process_input(input: &mut KeyInput) -> std::io::Result<Option<Key>> {
     let key = match input.next_char()? {
         9 => Key::Tab,
         13 => Key::Return,
-        27 => return Ok(process_escape(input)),
+        27 => {
+            let key = process_escape(input);
+            input.flush_buf();
+            return Ok(key);
+        }
         127 => Key::Delete,
 
         x @ 1..=31 => Key::Control((x + b'A' - 1) as char),
@@ -47,33 +62,47 @@ fn process_input(input: &mut KeyInput) -> std::io::Result<Option<Key>> {
 fn process_escape(input: &mut KeyInput) -> Option<Key> {
     let key = match input.next_char_in_buf() {
         None => Key::Escape,
-        Some(b'[') => {
-            let mut params_str = String::new();
-            while let Some(next) = input.next_char_in_buf() {
-                params_str.push(next as char);
-            }
-            let next = params_str.pop()?;
-            let _params = if params_str.is_empty() {
-                Vec::new()
-            } else {
-                params_str
-                    .split(';')
-                    .flat_map(|x| x.parse::<u64>())
-                    .collect()
-            };
+        Some(b'[') => match input.next_char_in_buf()? {
+            b'<' => {
+                let mut params_str = String::new();
+                while let Some(next) =
+                    input.next_char_in_buf_if(|c| (b'0'..=b'9').contains(&c) || c == b';')
+                {
+                    params_str.push(next as char);
+                }
 
-            match next {
-                'A' => Key::ArrowUp,
-                'B' => Key::ArrowDown,
-                'C' => Key::ArrowRight,
-                'D' => Key::ArrowLeft,
-                _ => return None,
+                let params = if params_str.is_empty() {
+                    Vec::new()
+                } else {
+                    params_str
+                        .split(';')
+                        .flat_map(|x| x.parse::<usize>())
+                        .collect()
+                };
+
+                let cb = *params.get(0)?;
+                let cx = *params.get(1)?;
+                let cy = *params.get(2)?;
+
+                let button = match cb {
+                    0 => MouseButton::Left,
+                    2 => MouseButton::Right,
+                    _ => return None,
+                };
+
+                match input.next_char_in_buf()? {
+                    b'm' => Key::Mouseup(button, cx, cy),
+                    b'M' => Key::Mousedown(button, cx, cy),
+                    _ => return None,
+                }
             }
-        }
-        _ => {
-            input.flush_buf();
-            return None;
-        }
+            b'A' => Key::ArrowUp,
+            b'B' => Key::ArrowDown,
+            b'C' => Key::ArrowRight,
+            b'D' => Key::ArrowLeft,
+            _ => return None,
+        },
+        _ => return None,
     };
 
     Some(key)
@@ -100,6 +129,16 @@ impl KeyInput {
         if self.buf_size > self.buf_position {
             self.buf_position += 1;
             Some(self.buf[self.buf_position - 1])
+        } else {
+            None
+        }
+    }
+
+    fn next_char_in_buf_if<F: Fn(u8) -> bool>(&mut self, f: F) -> Option<u8> {
+        let head = *self.buf.get(self.buf_position)?;
+        if f(head) {
+            self.buf_position += 1;
+            Some(head)
         } else {
             None
         }
