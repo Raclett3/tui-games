@@ -348,7 +348,9 @@ impl Game for MineSweeper {
             Key::Mouseup(MouseButton::Left, x, y) => {
                 let x = (x - 1) / 3;
                 let y = y - 1;
-                if self.board.contains_coord(x, y) {
+                if self.board.contains_coord(x, y)
+                    && (self.board.cell_at(x, y).is_revealed || !self.hold_mouse_buttons.1)
+                {
                     self.set_cursor(x, y);
                     self.reveal(self.hold_mouse_buttons.0 && self.hold_mouse_buttons.1);
                 }
