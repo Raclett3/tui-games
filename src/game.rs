@@ -11,8 +11,8 @@ pub trait Game {
 pub fn run_game<T, R, W>(mut game: T, read: R, mut write: W) -> std::io::Result<()>
 where
     T: Game,
-    R: Read + 'static,
-    W: Write + 'static,
+    R: Read,
+    W: Write,
 {
     let mut input = KeyInput::new(read);
 

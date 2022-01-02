@@ -28,13 +28,13 @@ fn write_char(dest: &mut impl Write, x: usize, y: usize, c: Character) -> std::i
     }
 }
 
-pub struct Screen {
+pub struct Screen<'a> {
     characters: Vec<Vec<Character>>,
-    dest: Box<dyn Write>,
+    dest: Box<dyn Write + 'a>,
 }
 
-impl Screen {
-    pub fn new(dest: impl Write + 'static) -> Self {
+impl<'a> Screen<'a> {
+    pub fn new(dest: impl Write + 'a) -> Self {
         Screen {
             characters: vec![vec![]],
             dest: Box::new(dest),

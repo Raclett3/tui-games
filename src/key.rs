@@ -108,15 +108,15 @@ fn process_escape(input: &mut KeyInput) -> Option<Key> {
     Some(key)
 }
 
-pub struct KeyInput {
+pub struct KeyInput<'a> {
     buf: [u8; 16],
     buf_position: usize,
     buf_size: usize,
-    source: Box<dyn Read>,
+    source: Box<dyn Read + 'a>,
 }
 
-impl KeyInput {
-    pub fn new(source: impl Read + 'static) -> Self {
+impl<'a> KeyInput<'a> {
+    pub fn new(source: impl Read + 'a) -> Self {
         KeyInput {
             buf: [0; 16],
             buf_position: 0,
