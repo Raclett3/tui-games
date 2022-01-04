@@ -153,6 +153,13 @@ impl Board {
             return;
         }
 
+        if self.is_cleared() {
+            self.cells
+                .iter_mut()
+                .filter(|x| x.is_mine)
+                .for_each(|x| x.is_flagged = true);
+        }
+
         if self.cell_at(x, y).adjacent_mines == 0 {
             for (adj_x, adj_y) in adjacent_cells_coord(x, y, self.width, self.height) {
                 self.reveal(adj_x, adj_y);
@@ -189,6 +196,8 @@ pub struct MineSweeper {
     board: Board,
     hold_mouse_buttons: (bool, bool),
     result: Option<GameResult>,
+    ticks_elapsed: usize,
+    is_started: bool,
 }
 
 impl MineSweeper {
@@ -202,6 +211,8 @@ impl MineSweeper {
             board: Board::new(width, height, mines),
             hold_mouse_buttons: (false, false),
             result: None,
+            ticks_elapsed: 0,
+            is_started: false,
         }
     }
 
@@ -268,6 +279,8 @@ impl MineSweeper {
             return;
         }
 
+        self.is_started = true;
+
         if chord {
             self.board.chord_reveal(self.cursor_x, self.cursor_y);
         } else {
@@ -282,6 +295,8 @@ impl MineSweeper {
     }
 
     pub fn flag(&mut self) {
+        self.is_started = true;
+
         if self.result.is_none() {
             self.board.flag(self.cursor_x, self.cursor_y);
         }
@@ -291,6 +306,12 @@ impl MineSweeper {
 impl Game for MineSweeper {
     fn render(&self) -> ScreenBuffer {
         let mut screen = ScreenBuffer::new();
+
+        let time = self.ticks_elapsed / 60;
+        let flags = self.board.cells.iter().filter(|x| x.is_flagged).count();
+        let mines = self.board.mines.saturating_sub(flags);
+        screen.write_color(&format!(" {:0>3}   {:0>3} ", mines, time), RED, WHITE);
+        screen.new_line();
 
         for y in 0..self.board.height {
             for x in 0..self.board.width {
@@ -361,17 +382,17 @@ impl Game for MineSweeper {
             Key::Character('r') | Key::Character('R') => {
                 *self = MineSweeper::new(self.difficulty);
             }
-            Key::Mousedown(MouseButton::Left, x, y) => {
+            Key::Mousedown(MouseButton::Left, x, y) if y >= 2 => {
                 let x = (x - 1) / 3;
-                let y = y - 1;
+                let y = y - 2;
                 if self.board.contains_coord(x, y) {
                     self.set_cursor(x, y);
                 }
                 self.hold_mouse_buttons.0 = true;
             }
-            Key::Mouseup(MouseButton::Left, x, y) => {
+            Key::Mouseup(MouseButton::Left, x, y) if y >= 2 => {
                 let x = (x - 1) / 3;
-                let y = y - 1;
+                let y = y - 2;
                 if self.board.contains_coord(x, y)
                     && (self.board.cell_at(x, y).is_revealed || !self.hold_mouse_buttons.1)
                 {
@@ -380,18 +401,18 @@ impl Game for MineSweeper {
                 }
                 self.hold_mouse_buttons.0 = false;
             }
-            Key::Mousedown(MouseButton::Right, x, y) => {
+            Key::Mousedown(MouseButton::Right, x, y) if y >= 2 => {
                 let x = (x - 1) / 3;
-                let y = y - 1;
+                let y = y - 2;
                 if self.board.contains_coord(x, y) {
                     self.set_cursor(x, y);
                     self.flag();
                 }
                 self.hold_mouse_buttons.1 = true;
             }
-            Key::Mouseup(MouseButton::Right, x, y) => {
+            Key::Mouseup(MouseButton::Right, x, y) if y >= 2 => {
                 let x = (x - 1) / 3;
-                let y = y - 1;
+                let y = y - 2;
                 if self.hold_mouse_buttons.0
                     && self.hold_mouse_buttons.1
                     && self.board.contains_coord(x, y)
@@ -403,6 +424,12 @@ impl Game for MineSweeper {
                 self.hold_mouse_buttons.1 = false;
             }
             _ => (),
+        }
+    }
+
+    fn tick(&mut self) {
+        if self.is_started && self.result.is_none() {
+            self.ticks_elapsed += 1;
         }
     }
 }

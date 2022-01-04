@@ -60,7 +60,7 @@ impl<R: Read> Read for TelnetRead<R> {
 pub fn run_game_on_telnet<G, R, W>(game: G, read: R, mut write: W) -> std::io::Result<()>
 where
     G: Game,
-    R: Read,
+    R: Read + Send + 'static,
     W: Write,
 {
     write.write_all(&[255, 253, 34, 255, 250, 34, 1, 0, 255, 240, 255, 251, 1])?;
@@ -74,7 +74,7 @@ where
 pub fn run_game_on_tty<G, R, W>(game: G, read: R, mut write: W) -> std::io::Result<()>
 where
     G: Game,
-    R: Read,
+    R: Read + Send + 'static,
     W: Write,
 {
     let mut rawmode = RawMode::new();
