@@ -25,8 +25,6 @@ fn main() -> std::io::Result<()> {
 
             Ok(())
         }
-        _ => {
-            run_game_on_tty(MineSweeper::new(0), stdin(), stdout())
-        }
+        _ => run_game_on_tty(MineSweeper::new(0), stdin(), stdout()),
     }
 }

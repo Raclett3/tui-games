@@ -1,6 +1,6 @@
+use std::io;
 use tui::key::*;
 use tui::rawmode::*;
-use std::io;
 
 fn main() -> io::Result<()> {
     let mut raw_mode = RawMode::new();

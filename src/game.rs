@@ -1,6 +1,6 @@
-use std::io::{Read, Write};
 use crate::key::{Key, KeyInput};
 use crate::screen::{Screen, ScreenBuffer};
+use std::io::{Read, Write};
 
 pub trait Game {
     fn render(&self) -> ScreenBuffer;
